@@ -134,6 +134,8 @@ ALTER TABLE `table_name` ADD [PRIMARY KEY/ UNIQUE/ INDEX index_name/ FULLTEXT] �
 
     现象2. 共同修改同一记录。（用户A查询data后想修改data, 用户B此时想修改data。A对data的锁从查询的共享锁想上升到排他锁，B对A的锁是排他锁。但此时，B要等A释放共享锁，A由于B的排他锁，没办法释放共享锁）解决办法：统一使用乐观锁。或者统一使用悲观锁。
 
+    现象3. 可以直接使用超时时间，超时则自动释放。
+
     避免死锁的办法：
 
     1. 尽量按某种顺序访问表和行，按顺序申请锁
@@ -283,3 +285,22 @@ ALTER TABLE `table_name` ADD [PRIMARY KEY/ UNIQUE/ INDEX index_name/ FULLTEXT] �
     > 匹配全值: 对索引中所有列都指定具体
 
     [其他优化方法](https://blog.csdn.net/u012758088/article/details/77140686)
+
+34. 分布式锁
+
+Mysql的
+    
+    乐观锁：维持表的版本号，在提交的时候再判断是否有冲突。有冲突则操作失败。
+
+    悲观锁：假定回发生冲突，屏蔽一切可能违反数据完整性的操作。实现方式：依靠数据库的锁机制for update。
+
+Redis的
+
+    使用setNX，增加一个key, 只有在key不存在时，才能set成功。
+
+
+分布式锁的安全问题
+
+    GC的stop the world: GC时间超过锁的超时时间。这样当client1 获取锁之后，经历一个长时间gc,锁自动释放，然后client2获得了这个锁。等到client1从阻塞中醒来，释放了client2的锁。（解决办法：可以考虑乐观锁）
+
+    长时间的网络IO：锁的过期时间应该大于所有网络调用的时间之和。
