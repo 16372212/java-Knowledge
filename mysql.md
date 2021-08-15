@@ -27,7 +27,7 @@
 事物的ACID怎么保证：
 
 原子性：不能只执行一部分，要么全做完，要么就都不做： undo log来回滚。
-一致性：执行食物前后，数据保持一致，比如汇款前后，总额不变。
+一致性：执行事物前后，数据保持一致，比如汇款前后，总额不变。
 隔离性：并发的事物之间是隔离的。（加锁）
 持久性：redo log。数据库发生故障，也不应该让一个事物的改动失效。
 
@@ -162,6 +162,20 @@ ALTER TABLE `table_name` ADD [PRIMARY KEY/ UNIQUE/ INDEX index_name/ FULLTEXT] �
 
     多版本控制
 
+    MVCC是通过保存数据在某个时间点的快照
+
+    InnoDB的MVCC,是通过在每行记录后面保存两个隐藏的列来实现的,这两个列，分别保存了这个行的创建时间，一个保存的是行的删除时间。
+
+    SELECT：
+
+        a.InnoDB只会查找版本 <= 当前事务版本的数据行。确保事务读取的行，要么是在事务开始前已经存在的.要么是事务自身插入或者修改过的.
+
+        b. 行的删除版本要么未定义,要么 > 当前事务版本号,这可以确保事务读取到的行，在事务开始之前未被删除
+
+    Delete: 
+
+        为删除的每一行，保存当前系统的版本号。
+
 9：谈一谈 InnoDB
 
     支持：事物、行锁、外键。
@@ -202,6 +216,10 @@ ALTER TABLE `table_name` ADD [PRIMARY KEY/ UNIQUE/ INDEX index_name/ FULLTEXT] �
 
 15：数据类型有哪些优化策略？
 
+    尽量使用类型简单的
+    尽量使用符合要求的容量小的数据类型
+    非NULL
+
 16：索引有什么作用？
 
 17：谈一谈 MySQL 的 B-Tree 索引
@@ -213,6 +231,8 @@ ALTER TABLE `table_name` ADD [PRIMARY KEY/ UNIQUE/ INDEX index_name/ FULLTEXT] �
 
 19：什么是自适应哈希索引？
 
+    经常访问的二级索引自动变成hash索引
+
 20 ：什么是空间索引？
 
 21：什么是全文索引？
@@ -220,6 +240,8 @@ ALTER TABLE `table_name` ADD [PRIMARY KEY/ UNIQUE/ INDEX index_name/ FULLTEXT] �
 22：什么是聚簇索引？
 
 23：什么是覆盖索引？
+
+    要查找的值正好是索引数据。不用再回表了
 
 24：你知道哪些索引使用原则？
 
@@ -247,5 +269,17 @@ ALTER TABLE `table_name` ADD [PRIMARY KEY/ UNIQUE/ INDEX index_name/ FULLTEXT] �
     
     乐观锁如何检查是否违反数据完整性：通过版本号或时间戳来表示。
 
-    
+33. 索引建立原则
 
+    >1 最左前缀匹配原则
+    mysql会一直向右匹配直到遇到范围查询（>、<、between、like）就停止匹配。比如a = 1 and b = 2 and c > 3 and d = 4，如果建立（a,b,c,d）顺序的索引，d是用不到索引的
+
+    >2 =和in可以乱序
+    比如a = 1 and b = 2 and c = 3 建立（a,b,c）索引可以任意顺序，mysql的查询优化器会帮你优化成索引可以识别的形式
+    >3 索引列不能参与计算，保持列“干净”
+
+    优化方法：
+
+    > 匹配全值: 对索引中所有列都指定具体
+
+    [其他优化方法](https://blog.csdn.net/u012758088/article/details/77140686)
