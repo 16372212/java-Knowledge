@@ -166,6 +166,9 @@ ALTER TABLE `table_name` ADD [PRIMARY KEY/ UNIQUE/ INDEX index_name/ FULLTEXT] �
 
     MVCC是通过保存数据在某个时间点的快照
 
+    实现的依赖：
+
+    1. 隐藏字段 + readView + undoLog
     InnoDB的MVCC,是通过在每行记录后面保存两个隐藏的列来实现的,这两个列，分别保存了这个行的创建时间，一个保存的是行的删除时间。
 
     SELECT：
@@ -304,3 +307,15 @@ Redis的
     GC的stop the world: GC时间超过锁的超时时间。这样当client1 获取锁之后，经历一个长时间gc,锁自动释放，然后client2获得了这个锁。等到client1从阻塞中醒来，释放了client2的锁。（解决办法：可以考虑乐观锁）
 
     长时间的网络IO：锁的过期时间应该大于所有网络调用的时间之和。
+
+日志
+
+    redo log: 物理日志，在某个数据页上做了什么修改。崩溃时重新执行。刷盘时机与存储方式？（可以在执行时不断写入，也可以提交时再写入）
+
+    binlog: 逻辑日志，只要有数据的更新就记录下来。用来同步数据，保证一致性。除此之外还能进行数据备份
+    事物执行时，先写到binlog cache，提交时，再把binlog cache写到binlog文件中。一个事物的binlog不能拆开
+
+    undo log: 原子性保证：异常发生时需要对已经执行的操作进行回滚。所有进行的修改都记录到日志中。
+
+
+
