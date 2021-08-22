@@ -317,5 +317,135 @@ Redis的
 
     undo log: 原子性保证：异常发生时需要对已经执行的操作进行回滚。所有进行的修改都记录到日志中。
 
+36. order dy与索引
+
+order by有两种实现方法：1. 利用有序索引实现 2. 算出结果再实现
+
+>order by在where语句中，利用索引无需排序。desc倒序
+
+> 执行顺序：select -> from -> join -> on -> where -> group by -> having->order by（分好组后找到固定的分组）
+
+
+#### 37. 优化mysql语句的
+
+##### 1. 注意书写时的某些顺序
+
+多表关联的顺序：*mysql优化器*会自己优化：当然，优化器也会考虑数据是否在缓存中，如果数据不在磁盘中，读取数据后还需要将二进制数据解析成数据行。
+
+> from 后面的表关联从右往左解析：数据量小的表放到右边关联
+
+优先选择结果集最小的那张表作为驱动表和其他表链接。
+
+    怎么选择结果最小的表？ 根据where中的查询条件估算：如果where中用到了索引（走索引了），那可根据索引估算。 例如c.id>15， 直到最大id为20，那就等于5个，b.class = '1001'，直到class的分布范围是10%，那就能估算出一共多少个（10/10 =10个）
+
+
+```sql
+select a.id, b.name, c.address
+from A a
+    inner join B b on a.bid = b.id
+    inner join C c on a.cid = c.id
+    inner join D d on a.did = c.id
+where a.id in (1,2,3,4,5) and b.class = '1001' and c.id>15 and d.age < 30;
+
+select a.id, b.name, c.address
+from A a, B b, C c, D d
+where a.bid = b.id
+    and c on a.cid = c.id
+    and b on a.cid = d.id
+    and a.id in (1,2,3,4,5,6)
+    and c.id > 15
+    and d.age < 30;
+```
+
+> where条件解析从下往上。筛选出小量数据的条件放到where语句的最左边
+
+##### 2. 减少回表
+最好在查询里只包含索引列，而不用select*这种
+并且，尽量使用索引：
+
+尽量使用索引的方法：
+    
+    1. 字段要独立出现：比如下面两条SQL语句在语义上相同，但是第一条会使用主键索引而第二条不会。
+    select * from user where id = 20-1; 
+    select * from user where id+1 = 20;
+
+    2. 对于建立的符合索引，注意最左匹配原则：
+    (first_name,last_name); 使用first_name可以走索引，但是last_name不走索引
+
+    3. 对join语句匹配关系（on）涉及的字段最好能是索引
+
+    4. like查询，不能以通配符开头
+    select * from article where title like '%mysql%'; // 不用索引
+    select * from article where title like 'mysql%'; // 可用索引
+
+##### 3. 慢查询解决办法
+
+慢查询是满查询日志，记录所有的响应时间超过阈值的语句。（long_query_time = 10 默认)
+需要手动设置启动慢查询日志，启动的话回对性能带来一定的影响
+
+explain可以获得mysql中sql语句中的执行计划。语句是否使用了关联查询，是否使用了索引等。
+*在查询语句前加explain*
+
+```sql
+-- explain出来的参数 --
+table:
+type:
+all: full table scan
+index
+range:索引范围扫描
+rows：检查出来的返回请求数据的行数
+```
+
+##### 4. explain的使用
+在查询语句前加explain
+
+```sql
+-- explain出来的参数 --
+table:
+type:
+all: full table scan
+index
+range:索引范围扫描
+rows：检查出来的返回请求数据的行数
+```
+
+##### 5. 数据类型的选择
+
+尽可能选择小的数据类型和指定短的长度。尽可能使用 not null
+
+    varchar和char：varchar变长，varchar用一个字节表示这个字符串的目前长度。在char(M)类型的数据列里，每个值都占用M个字节，如果某个长度小于M，MySQL就会在它的右边用空格字符补足。
+
+varchar和char的区别：
+
+- 存储空间规则不同：CHAR平均占用的空间多于VARCHAR，因此使用varchar需要最小化处理数据行的总量和磁盘io有好处。
+- 存储最大容量不同：对 char 来说，最多能存放的字符个数 255，和编码无关。 而 varchar 呢，最多能存放 65532个字符。
+
+对于InnoDB表，因为它的数据行内部存储格式对固定长度的数据行和可变长度的数据行不加区分（所有数据行共用一个表头部分，因此使用*varchar*更好
+
+##### 6. 可以在设计时预留一些字段防止后续需要改进
+
+##### 
+
+38. Redis 缓存雪崩、击穿、穿透
+
+缓存雪崩：redis key大面积同时失效，查询直接全部落库，太大的QPS直接打DB去mysql会直接打挂（但是可以实现分库和分表）
+
+    解决办法：1. 把每个Key的失效时间都加个随机值
+    2. 如果Redis是集群部署，将热点数据均匀分布在不同的Redis库中 3. 设置热点数据永远不过期，有更新操作就更新缓存就好了
+
+缓存穿透：指缓存和数据库中都没有的数据，而用户不断发起请求
+
+    解决办法：1. 接口层增加校验，比如用户鉴权校验，参数做校验，不合法的参数直接代码Return，比如：id 做基础校验，id <=0的直接拦截等。
+    （小点的单机系统，基本上用postman就能搞死，比如我自己买的阿里云服务）/数据库id都是大于0的，我一直用小于0的参数去请求你，每次都能绕开Redis直接打到数据库，数据库也查不到，每次都这样，并发高点就容易崩掉了。
+
+    2. 将对应Key的Value对写为null、位置错误、稍后重试这样的值具体取啥问产品
+
+    3. 网关层Nginx本渣我也记得有配置项，可以让运维大大对单个IP每秒访问次数超出阈值的IP都拉黑。
+
+    4. Redis还有一个高级用法布隆过滤器（Bloom Filter）这个也能很好的防止缓存穿透。不存在你return就好了，存在你就去查了DB刷新KV再return。
+    
+缓存击穿： 一个Key非常热点，在不停的扛着大并发，大并发集中对这一个点进行访问，当这个Key在失效的瞬间，持续的大并发就穿破缓存，直接请求数据库，
+
+
 
 
