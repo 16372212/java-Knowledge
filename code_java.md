@@ -161,5 +161,55 @@ synchronized: 同一时刻只有一个线程对共享变量进行操作
 
 ## Linux 如何查询进程占用，top 和ps， top的参数有哪些？
 
-## 
+## java实现一个hashTable
+```java
+class MyhashMap{
+private:
+    vector<list<pair<int,int>>> data;
+    static const int base = 769;
+    static int hash(int key){
+        return key&base;
+    }
 
+public:
+    MyhashMap():data(base){};
+
+    void put(int key, int value){
+        int index = hash(key);
+        for(auto it = data[index].begin();it!=data[index].end();it++){
+            if((*it).key == key){
+                (*it).second = value;
+                return;
+            }
+        }
+        data[index].push_back(new pair<int,int>(key,value));
+    }
+
+    int get(int key){
+        int h = index(key);
+        for(auto it = data[index].begin();it!=data[index].end();it++){
+            if((*it).key == key){
+                return (*it).second;
+            }
+        }
+        return -1;
+    }
+
+    void remove(int key){
+        int h = hash(key);
+        for(auto it = data[index].begin();it!=data[index].end();it++){
+            if((*it).key == key){
+                it = data[index].erase(it);
+                return;
+            }
+        }
+    }
+}
+
+public class MyFunc(){
+    MyhashMap maps = MyhashMap();
+    maps.put(1,2);
+    maps.get(1);
+}
+
+```
