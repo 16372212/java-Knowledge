@@ -23,6 +23,8 @@ abstract关键字可以修改类或方法。
 
 abstract类：（为了被子类重写）可以扩展（增加子类），但*不能直接实例化*。abstract方法不在声明它的类中实现，但必须在某个子类中重写。采用 abstract方法的类本来就是抽象类，并且必须声明为abstract。
 
+（抽象类里可以包含静态方法）
+
 ### 2. static
 
     2.1 static 修饰属性：无论一个类生成了多少个对象，所有这些对象共同使用唯一一份静态的成员变量；一个对象改了其他的对象也改了。 ‘类名.成员变量名’的方式来使用
@@ -40,14 +42,122 @@ abstract类：（为了被子类重写）可以扩展（增加子类），但*�
 
 ### 3. synchronized
 
+
+### 4. final finally finalize
+
+#### final:
+
+- 变量：不能被改写
+- 方法：方法不能在子类里重写
+- 类：无法被继承
+
+#### finally:
+
+无论是否发生异常，finally代码块中的代码总会被执行。try中如果有return，也会执行finally中的值。会先将try中要return的值存起来。当try和finally里都有return时，会忽略try的return，而使用finally的return。
+
+
+#### finalize:
+垃圾回收器准备释放内存的时候，会先调用finalize(), 在垃圾收集器将对象从内存中清除出去之前做必要的清理工作
+
+
+### String相关
+
 #### string, stringBuffer, stringBuilder
 
-string本身继承自private final, 所以不能被更改
+string本身继承自private. 是final修饰的类, 所以不能被更改。所以是线程安全的。
+
+    string是不能被改写的，因为是通过final来修饰的。但是java 1.5之后可以通过反射来改变。因此String可以保证安全性。
 
 stringBuffer对方法增加了同步锁or对调用的方法加了同步锁
 
 stringBuilder没有对调用方法增加同步锁，所以非线程安全。
 
+区别： StringBuffer, StringBuilder使用字符数组保存字符串char[]。没有用final关键字修饰，所以可变。
+
+
+
+## object
+
+所有类的父类。
+方法：
+getClass, hashcode, equals, toString, wait, notify, notifyAll(此对象监视器上等待的所有线程) finalize, 
+
+## 反射
+
+
+## 集合(容器)
+
+> java中集合分成两大派生接口，collection和map
+
+- collection: 分成三个子接口：list, set, queue
+
+- map: hashtable, hashMap, sortedMap
+
+### 1 collection
+
+#### list
+1. arraylist: 底层用object数组存储，线程不安全。数组特性：插入删除复杂度等，支持快速随机访问。空间上，list列表结尾会预留一定的容量空间。
+
+>同步：ArrayList没有同步方法。如果多个线程同时访问一个List，则必须自己实现访问同步。一种解决方法是在创建List时构造一个同步的List
+
+> 增长方式：ArrayList每次对size增长50%.
+
+2. linkedList(双向链表)：底层用双向链表存储。空间上：每个元素都要一部分存指针。
+
+> 同步：线程不安全的，方式同上
+
+3. vector：底层也是对象数组。
+
+> 同步：Vector是线程安全的，性能较ArrayList差
+
+> 扩容方式：每次申请自己现有容量的两倍
+
+#### set
+
+1. hashset：底层hashMap实现的vel
+
+2. linkedHashSet： 能够按照添加的顺序便利
+
+3. TreeSet：能按照添加元素的顺序便利，排序的方式有自然排序和定制排序。
+
+#### queue
+
+1. priorityQueue：二插堆实现，底层用可变长度数组存储。非线程安全，不能存null
+
+2. arrayQueue：可变长度的数组+指针。
+
+### dequeue 双端队列
+
+arrayDeQue, LinkedList的区别：
+
+    1. 虽然都实现了Dequeue接口，但底层逻辑不同：arrayDeque：可变长度的数组+双指针。 linkedList是双链表。
+
+    2. arrayDeque不能存null, linkedList能存null
+
+    3. linkedList因为是链表，每次插入都要申请新的堆空间。
+
+
+### map
+
+1 hashMap：hashmap是非同步的，线程不安全。没有同步代码时，无法让多个线程同时使用；hashmap循序有一个null key, multiple null values
+
+2 LinkedHashMap: 继承自hashMap，在此基础上加了一个双链表。保证插入顺序。
+
+3 HashTable：同步的。不能存在null key or null values
+> 同步的方式：（读写数据的时候，对整个容器上锁）使用的是synchronized来保证线程安全。效率低，如果多个同时访问同步方法，会产生阻塞or轮询。
+
+4 TreeMap：红黑树
+
+5 CuncurrentHashMap: 分段数组+链表+红黑树
+> 同步的方式：（使用分段锁，只锁住了需要被修改的部分）使用 Node数组+ 链表 + 红黑树 实现，并发使用synchronized 和CAS来操作。
+
+#### concurrentHashMap & hashMap & hashTable
+
+- 相同点：concurrentHashMap & hashMap 底层数据结构： 对于java1.8. 采用的是数组+链表/红黑树。
+
+- 不同点：线程安全的方式不同：
+
+ 
 
 #### hashcode equals
 
@@ -56,16 +166,6 @@ hashcode:确定对象在hash表中的索引位置（将内存地址转化为整�
 equals: 确定两个对象是否真的相等。如果equal，则hashcode也一定相等。如果hashcode相等，则不一定equals
 
 
-#### hashmap， hashtable
-1. 同步
-hashmap是非同步的，线程不安全。没有同步代码时，无法让多个线程同时使用
-
-而hashtable是同步的
-
-2. null值
-hashmap循序有一个null key, multiple null values, while hashtable can not have null key or value
-
-> why hashtable does not have null: to store and retrieve objects, hashtable should have implement `hashCode` method and `equal` method, but null is not object.(hashmap is an improvement based on hashtable)
 
 3. hashMap更常见
 
@@ -187,15 +287,7 @@ hashcode 相同-> 再查看equals，相同则相同，不相同则不相同。
 
 后来，当链表长度>8, 则将链表转为红黑树
 
-### concurrentHashMap & hashMap & hashTable
 
-相同点：concurrentHashMap & hashMap 底层数据结构： 对于java1.8. 采用的是数组+链表/红黑树。
-
-不同点：线程安全不同：
-
-concurrentHashMap: （使用分段锁，只锁住了需要被修改的部分）使用 Node数组+ 链表 + 红黑树 实现，并发使用synchronized 和CAS来操作。
-
-hashTable: （读写数据的时候，对整个容器上锁）使用的是synchronized来保证线程安全。效率低，如果多个同时访问同步方法，会产生阻塞or轮询。
 
 ### TreeSet, TreeMap和LinkedHashMap
 
@@ -218,4 +310,7 @@ LinkedHashMap是有序的，按照插入顺序进行排序。
 
 最优二叉树：从根结点到各个内结点的加权路径长度之和最小的二叉树
 
-    
+
+Object都有哪些方法
+
+如何对String进行改写
