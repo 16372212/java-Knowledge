@@ -100,7 +100,7 @@ getClass, hashcode, equals, toString, wait, notify, notifyAll(此对象监视器
 
 >同步：ArrayList没有同步方法。如果多个线程同时访问一个List，则必须自己实现访问同步。一种解决方法是在创建List时构造一个同步的List
 
-> 增长方式：ArrayList每次对size增长50%.
+> 增长方式：ArrayList每次对size增长50%->1.5倍，建立一个新数组，再复制
 
 2. linkedList(双向链表)：底层用双向链表存储。空间上：每个元素都要一部分存指针。
 
