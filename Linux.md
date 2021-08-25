@@ -1,5 +1,4 @@
-# 一面暴露的不足：
-## linux实现隔离为什么有的用户还是可以访问其他namespace空间下的内容？（文件共享mmap）
+
 ## zookeeper是什么
 ## sortedLinkedList原理补充
 ## mq实现原理，socket函数select的缺陷，epoll模型
@@ -110,12 +109,22 @@ Shell是用户与Linux系统之间的接口.用户登录后，要启动一个进
 
 ### 常用命令：
 
-    1. grep 要搜索的字符串 要搜索的文件 --color（color表示高亮）
-    grep 更适合单纯的查找或匹配文本，sed 更适合编辑匹配到的文本，awk 更适合格式化文本，对文本进行较复杂格式处理
+#### grep 要搜索的字符串 要搜索的文件 --color（color表示高亮）
 
-    2. ps -ef/ ps -aux 查看当前系统正在运行进程。展示格式不同. ps aux|grep redis查看包括redis字符串的进程
+grep 更适合单纯的查找或匹配文本，sed 更适合编辑匹配到的文本，awk 更适合格式化文本，对文本进行较复杂格式处理
 
-    nethogs 查看某个进程占用的流量
+#### ps -ef/ ps -aux 查看当前系统正在运行进程。展示格式不同. ps aux|grep redis查看包括redis字符串的进程
+如何排查进程之间的父子关系（pid ppid），怎么判断进程是僵尸进程，ps 能看到啥信息
+
+#### top
+能看到什么系统信息
+
+#### kill
+
+#### awk
+
+#### netstat(什么场景使用到它)
+
 
 >linux中进程的几个状态: 
 - Z 僵尸
@@ -434,3 +443,24 @@ epoll是Linux特有的I/O复用函数。*一个文件描述符来管理多个描
 内核通过红黑树描述这些文件描述符。
 
 epoll解决了select和poll在文件描述符集合拷贝和遍历上的问题，能够在一个进程当中监听多个文件描述符，并且十分高效。
+
+
+# 其他问题
+
+
+5. Linux如何查看端口占用？
+Netstat -tunlp | grep 80
+Lsof -i:80 需要root权限
+6. Linux下程序崩溃，无法打印log，如何查看哪里出现问题？
+7. Linux下python 调试？pdb如何使用？
+8. Linux下gdb使用？
+9. Linux 下java debug?
+1.ps -e 查看进程 pid; ps -ef 能查看父进程id
+2.top -p pid 查看该进程资源占用情况；
+3.ps -mp pid -o THREAD,tid,time；查看该进程下的各个线程运行时间，根据运行时间可以判断卡再哪个位置；
+4. Printf "%x\n" tid ; 把tid转换为16进制格式；
+5.jstack pid | grep tid -A 30; 
+打印pid进程的Java运行信息，截取带有tid线程号的行并输出其后30行的信息
+ // 查看端口顺序
+1. Lsof -i:3306 or netstat -tunlp | grep 3306 查看端口占用； 找到对应的pid 或 程序名；
+2. Ps -aux | grep pid or top -p pid 查看该进程的资源占用(看ppid 要用 ps -ef)
