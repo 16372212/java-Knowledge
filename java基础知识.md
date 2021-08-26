@@ -139,16 +139,74 @@ arrayDeQue, LinkedList的区别：
 
 ### map
 
-1 hashMap：hashmap是非同步的，线程不安全。没有同步代码时，无法让多个线程同时使用；hashmap循序有一个null key, multiple null values
+#### 1 hashMap
 
-2 LinkedHashMap: 继承自hashMap，在此基础上加了一个双链表。保证插入顺序。
+[参考博文](https://blog.csdn.net/u014532901/article/details/78936283)
 
-3 HashTable：同步的。不能存在null key or null values
+非同步的，线程不安全。没有同步代码时，无法让多个线程同时使用；hashmap允许有一个null key, multiple null values
+
+1. 什么是hashMap:
+
+HashMap内部实现是一个桶数组，每个桶中存放着一个单链表的头结点。其中每个结点存储的是一个键值对整体（Entry），HashMap采用拉链法解决哈希冲突（关于哈希冲突后面会介绍）。
+
+2. 操作方法：
+当调用put操作时，HashMap计算键值K的哈希值，然后将其对应到HashMap的某一个桶(bucket)上；此时找到以这个桶为头结点的一个单链表，然后顺序遍历该单链表找到某个节点的Entry中的Key是等于给定的参数K；若找到，则将其的old V替换为参数指定的V；否则直接在链表尾部插入一个新的Entry节点。
+
+
+3. hashMap扩容方式（jdk1.7)
+
+hashMap中的一些参数：
+`public HashMap(int initialCapacity(数组大小), float loadFactor（装载因子，扩容阈值) = 0.75 ;`
+`初始化容量：16:1<<4`
+
+当map中包含的Node的数量（size) 大于等于threshold = loadFactor * capacity(桶的长度）的时候，且新建的Entry刚好落在一个非空的桶上，此刻触发扩容机制，将其容量扩大为*2倍*。
+
+p.s.: 当size大于等于threshold的时候，并不一定会触发扩容机制.只要有一个新建的Node出现哈希冲突，则立刻resize。
+
+resize时候需要完成新表到旧表的转移（transfer）：遍历旧表中的每个桶节点。这个桶节点就是对应数组index位置的链表的头节点。然后依次使用next的方法遍历这些链表，找到每个节点在新表中对应的新位置并插入。*因此多线程时hashMap是不安全的。因为当多个线程同时transfer, 某个线程t所持有的引用next，也就是下一个需要被转移的节点，可能已经放在新表里了。会出现多个线程对同一链表无限进行链表transfer的操作，极易造成死循环，数据丢失等等*
+
+为什么容量必须是二的n次幂：因为获取对应位置时候，是将哈希值h与桶数组的length-1（全1）进行了一个与操作得出了对应的桶的位置，因此如果不是2的倍数，那len-1就不是全1的。
+
+(1.7使用的是头插法，永远添加到数组的头部位置)
+
+
+4. hashMap扩容方式（jdk1.8)
+
+(1.8使用的是尾插法，永远添加到数组的头部位置)
+
+参数：`初始化容量`, `集合最大容量`, `负载因子0.75`, `8:链表值超过8变成红黑树`,`6:链表值小于6从红黑树转为链表`。 threshed = 容量*负载因子
+（详情请见 [底层/容器源码.md](./底层/容器源码.md)）
+
+
+当链表长度超过8时，链表转换为红黑树
+
+#### 2 LinkedHashMap: 
+
+继承自hashMap，在此基础上加了一个双链表。保证插入顺序。
+
+改变方法：将Entry本身改了, 增加了before, after。因此进行hashcode，equals时
+```java
+static class Entry<K,V> extends HashMap.Node<K,V> {
+    Entry<K,V> before, after;
+    Entry(int hash, K key, V value, Node<K,V> next) {
+        super(hash, key, value, next);
+    }
+}
+```
+这个双链表，将所有的entry链接起来。因此，迭代的时候，只用迭代双向链表即可，不用遍历整个table。
+
+非同步。同步的方法：`Collections.synchronizedMap(new LinkedHashMap(...))`
+
+
+#### 3 HashTable
+
+同步的。不能存在null key or null values
+
 > 同步的方式：（读写数据的时候，对整个容器上锁）使用的是synchronized来保证线程安全。效率低，如果多个同时访问同步方法，会产生阻塞or轮询。
 
-4 TreeMap：红黑树
+#### TreeMap：红黑树
 
-5 CuncurrentHashMap: 分段数组+链表+红黑树
+#### CuncurrentHashMap: 分段数组+链表+红黑树
 > 同步的方式：（使用分段锁，只锁住了需要被修改的部分）使用 Node数组+ 链表 + 红黑树 实现，并发使用synchronized 和CAS来操作。
 
 #### concurrentHashMap & hashMap & hashTable
@@ -159,15 +217,13 @@ arrayDeQue, LinkedList的区别：
 
  
 
-#### hashcode equals
+### hashcode equals
 
 hashcode:确定对象在hash表中的索引位置（将内存地址转化为整数后返回）
 
 equals: 确定两个对象是否真的相等。如果equal，则hashcode也一定相等。如果hashcode相等，则不一定equals
 
 
-
-3. hashMap更常见
 
 ### ++i i++
 i = 1
