@@ -57,7 +57,11 @@ abstract类：（为了被子类重写）可以扩展（增加子类），但*�
 
 
 #### finalize:
-垃圾回收器准备释放内存的时候，会先调用finalize(), 在垃圾收集器将对象从内存中清除出去之前做必要的清理工作
+
+finalize()是Object的protected方法，子类可以覆盖该方法以实现资源清理工作，GC在回收对象之前调用该方法。
+
+##### finalize的执行过程(生命周期)
+
 
 
 ### String相关
@@ -66,15 +70,19 @@ abstract类：（为了被子类重写）可以扩展（增加子类），但*�
 
 string本身继承自private. 是final修饰的类, 所以不能被更改。所以是线程安全的。
 
-    string是不能被改写的，因为是通过final来修饰的。但是java 1.5之后可以通过反射来改变。因此String可以保证安全性。
+    string是不能被改写的，因为是通过final来修饰的。但是java 1.5之后可以通过反射来改变。因此String可以保证安全性。string是字符串常量,在修改时不会改变自身,若修改,等于重新生成新的字符串对象。
+
+    每一个String对象都会独立占用内存一块区域
+
 
 stringBuffer对方法增加了同步锁or对调用的方法加了同步锁
 
 stringBuilder没有对调用方法增加同步锁，所以非线程安全。
 
-区别： StringBuffer, StringBuilder使用字符数组保存字符串char[]。没有用final关键字修饰，所以可变。
+区别： 
+- StringBuffer, StringBuilder使用字符数组保存字符串char[]。没有用final关键字修饰，所以可变。
 
-
+- 二者都是对对象本身进行操作，不会生成新的字符串对象，而String每次都会生成一个新的对象，这会对系统的性能造成影响
 
 ## object
 
