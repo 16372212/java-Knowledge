@@ -1,10 +1,4 @@
 
-## zookeeper是什么
-## sortedLinkedList原理补充
-## mq实现原理，socket函数select的缺陷，epoll模型
-## 数据库的数据权限
-
-
 ## kernal和cpu
 kernel: 负责系统管理，比如内存管理，屏蔽了对硬件的操作。
 cpu: 硬件层面上的，处理各种指令，提供运算

@@ -26,7 +26,7 @@ axu 目前所有正在运行的程序
 `ps aux | grep Z`
 -o 自定义输出字段，我们设定显示字段为stat（状态），ppid（父进程pid），pid（进程pid），cmd（命令行）这四个参数
 
-grep 抓取stat 状态为zZ进程
+# grep 抓取stat 状态为zZ进程
 
     一个进程在调用exit命令结束自己的生命的时候，其实它并没有真正的被销毁， 而是留下一个称为僵尸进程（Zombie）的数据结构。直到父进程通过wait回收他。
 
