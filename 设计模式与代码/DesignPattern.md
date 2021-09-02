@@ -9,12 +9,14 @@
 客户端（main）承接工厂传递的子类后，调用子类中的override公共方法。
 `Operator ope; ope = AddOperator(); return ope;`
 
-![fact](./pic/factory.png)
+![fact](../pic/factory.png)
 
 # 策略模式
 
-![strategy](./pic/strategy.JPG)
+![strategy](../pic/strategy.JPG)
 
 > 以特定方式执行一个操作（或一组操作）, 多态地更改类的行为。策略模式可以和工厂模式结合，可以在创建后进行一个执行的操作。
 
 封装了一系列算法。可以封装规则，在内部根据不同的规则，处理变化。
+
+
