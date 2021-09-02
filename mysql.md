@@ -176,15 +176,16 @@ ALTER TABLE `table_name` ADD [PRIMARY KEY/ UNIQUE/ INDEX index_name/ FULLTEXT] �
 7：MySQL 的隔离级别有哪些？
 
     未提交读
-    提交读
-    可重复读
+    提交读（不会出现脏读，但是会产生"幻读"问题. 也会出现可重复读）：解决办法MVCC
+    可重复读(可以不出现幻读，通过间隙锁+行锁):解决办法：Next-Key Lock是行锁与间隙锁的组合 + MVCC
     可串行化
+> 间隙锁：
 
 8：MVCC 是什么？
 
     多版本控制
 
-    MVCC是通过保存数据在某个时间点的快照
+    innodb中的MVCC是通过保存数据在某个时间点的快照
 
     实现的依赖：
 
@@ -200,6 +201,8 @@ ALTER TABLE `table_name` ADD [PRIMARY KEY/ UNIQUE/ INDEX index_name/ FULLTEXT] �
     Delete: 
 
         为删除的每一行，保存当前系统的版本号。
+    
+    不能解决幻读.
 
 9：谈一谈 InnoDB
 
