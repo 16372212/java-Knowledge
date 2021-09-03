@@ -12,6 +12,8 @@ LockSupport.unpark: // 不安全，要确保线程依旧存活
 
 引入的都是unsafe的park, unpark函数。
 
+> unsafe是只允许读的类，只有固定的类里的方法才能调用unsafe里的部分方法。
+
 ## 源码
 ```java
 private LockSupport() {} // Cannot be instantiated.
