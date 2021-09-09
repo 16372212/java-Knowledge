@@ -212,10 +212,14 @@ static class Entry<K,V> extends HashMap.Node<K,V> {
 
 > 同步的方式：（读写数据的时候，对整个容器上锁）使用的是synchronized来保证线程安全。效率低，如果多个同时访问同步方法，会产生阻塞or轮询。
 
+sychrinized将整个表都锁住了。
+
 #### TreeMap：红黑树
 
 #### CuncurrentHashMap: 分段数组+链表+红黑树
 > 同步的方式：（使用分段锁，只锁住了需要被修改的部分）使用 Node数组+ 链表 + 红黑树 实现，并发使用synchronized 和CAS来操作。
+
+在对象中保存了一个segment数组，将整个hash表划分成了多个分段。每个segment元素，类似于一个hashtable, 这样在执行put时候可以定位segment
 
 #### concurrentHashMap & hashMap & hashTable
 

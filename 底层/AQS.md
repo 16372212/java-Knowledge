@@ -117,7 +117,7 @@ protected final boolean compareAndSetState(int expect, int update) {
 ### ObjectCondition类（condition队列）
 继承了Condition接口的一些方法
 
-定义了等待和通知的方法。因为里面的线程是因为触发某些原因中断而自发的调用await从而释放锁的。
+定义了等待和通知的方法。因为里面的线程是因为触发某些原因中断而自发的调用await从而释放锁的。await实现方法用的是`R`
 
 condition是依赖当前的锁。
 
@@ -125,6 +125,7 @@ await(): 是当前进程加入等待Condition队列，并释放锁
 signal(): 唤醒队列中等待时间最长的节点，唤醒前将节点移动到同步队列。
 
 ```java
+
 // Condition中的一些接口
 
 public interface Condition {
