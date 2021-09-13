@@ -62,7 +62,9 @@ finalize()是Object的protected方法，子类可以覆盖该方法以实现资�
 
 ##### finalize的执行过程(生命周期)
 
-
+### 4. transient
+防止属性被序列化。
+一个对象只要实现了Serilizable接口，这个对象就可以被序列化，将不需要序列化的属性前添加关键字transient，就可以序列化后无法访问。比如一些用户的敏感信息Password
 
 ### String相关
 
