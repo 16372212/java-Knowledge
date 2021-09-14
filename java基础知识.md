@@ -384,3 +384,45 @@ LinkedHashMap是有序的，按照插入顺序进行排序。
 Object都有哪些方法
 
 如何对String进行改写
+
+## java反射
+
+程序在**运行期间**拿到类的成员变量和方法，调用任意一个对象的属性和方法。（不需要静态创建类，实例化后硬编码来操作了。）
+
+JVM为每个加载的类创建对应的实例，并在实例中保存类的所有信息，比如类名，包名，父类，实现的接口等。获得了某个实例，就可以通过实例拿到对应的class的所有信息。
+
+将.class文件读入内存时，自动为之创建一个java.lang.Class对象。通过这个Class对象，获得对象的其他信息。
+
+### 得到Class对象的方法
+
+1. 用对象调用getClass（）方法
+```java
+// 获得类的方法
+String s = "hello";
+Class cls = s.getClass();
+```
+2. 通过 Class类的静态方法
+```java
+// 知道完整类名
+Class cls = Class.forName("java.long.String")
+```
+动态加载类，jvm在用到.class文件时才会把这个类加载。
+
+3. 直接使用类的class属性，类名.class
+
+```java
+Class stdClass = Student.class;
+```
+
+### 得到Class后，可以使用Class类中的一些方法获得属性
+
+- getPackage()
+- getName()
+- getMethod()
+- getFields()
+
+### 反射的优点
+
+- 提高程序灵活性，减少耦合
+- 通过反射机制可以让程序创建和控制任何对象
+- 能够在运行时构造一个类的对象、判断类具有的成员变量和方法
