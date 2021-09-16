@@ -1,6 +1,6 @@
 # 实现概览
 
-jdk1.7之前的使用分段锁segment。jdk1.8用数组+链表+红黑树+CAS原子操作 实现 ConcurrentHashMap
+jdk1.7之前的使用分段锁segment，每个segment内部是一个hashTable。jdk1.8用数组+链表+红黑树+CAS原子操作 实现 ConcurrentHashMap，也就是给么给线程分配一个桶的区间，并发扩容于转移。
 
 # HashTable
 HashTable: synchronized对**整个**对象进行put等修改Hash时，进行加锁
@@ -55,6 +55,7 @@ volatile关键字可以保证put的时候的可见性。
 
 # JDK1.8
 
+精髓：通过给每个线程分配一个桶的区间，进行并发式的扩容。
 
 1.8没有用到分段锁segment。加锁使用**CAS+Synchronized实现**。 虽然也定义了Segment静态内部类，但JDK1.8中只有在（反）序列化方法中使用了这个类，只是为了（反）序列化时与JDK1.7相兼容而已。
 
@@ -308,7 +309,164 @@ private final void tryPresize(int size) {
 疑问： 一次移动多少的数据，是以index桶为单位吗，stride的作用？
 
 
+```java
+private final void transfer(Node<K,V>[] tab, Node<K,V>[] nextTab) {
+    int n = tab.length, stride;
+
+    if ((stride = (NCPU > 1) ? (n >>> 3) / NCPU : n) < MIN_TRANSFER_STRIDE)
+        stride = MIN_TRANSFER_STRIDE; // subdivide range 步长
+    if (nextTab == null) {            // initiating
+        try {
+            // 容量翻倍
+            @SuppressWarnings("unchecked")
+            Node<K,V>[] nt = (Node<K,V>[])new Node<?,?>[n << 1];
+            nextTab = nt;
+        } catch (Throwable ex) {      // try to cope with OOME
+            sizeCtl = Integer.MAX_VALUE;
+            return;
+        }
+        nextTable = nextTab;
+        transferIndex = n; // 用于控制迁移的位置
+    }
+    int nextn = nextTab.length;
+    ForwardingNode<K,V> fwd = new ForwardingNode<K,V>(nextTab); // 使用这个构造方法构造的forwording节点，hash值为MOVED, next指向nextTab
+    // 迁移完桶i的这个节点后，
+
+    boolean advance = true; // 该位置完成迁移，可以进行下一个了
+    boolean finishing = false; // to ensure sweep before committing nextTab
+
+    // 从后往前迁移
+    for (int i = 0, bound = 0;;) {
+        Node<K,V> f; int fh;
+
+        while (advance) {
+            int nextIndex, nextBound;
+            if (--i >= bound || finishing)
+                advance = false;
+            else if ((nextIndex = transferIndex) <= 0) { // 原数组已经都有相应的线程去处理了
+                i = -1;
+                advance = false;
+            }
+            else if (U.compareAndSwapInt // 本次迁移
+                        (this, TRANSFERINDEX, nextIndex,
+                        nextBound = (nextIndex > stride ?
+                                    nextIndex - stride : 0))) {
+                bound = nextBound;
+                i = nextIndex - 1;
+                advance = false;
+            }
+        }
+        if (i < 0 || i >= n || i + n >= nextn) {
+            int sc;
+            if (finishing) {
+                nextTable = null;
+                // 完成迁移
+                table = nextTab;
+                // 重新计算sizeCtl，代表下次扩容的阈值
+                sizeCtl = (n << 1) - (n >>> 1);
+                return;
+            }
+
+            if (U.compareAndSwapInt(this, SIZECTL, sc = sizeCtl, sc - 1)) {
+                if ((sc - 2) != resizeStamp(n) << RESIZE_STAMP_SHIFT)
+                    return;
+                finishing = advance = true;
+                i = n; // recheck before commit
+            }
+        }
+        // 如果当前位置是空的，放入刚初始化的ForwardingNode空节点
+        else if ((f = tabAt(tab, i)) == null)
+            advance = casTabAt(tab, i, null, fwd);
+        // 如果当前的已经是forwarding节点了, 表示已经迁移过
+        else if ((fh = f.hash) == MOVED)
+            advance = true; // already processed
+        else {
+            // 开始迁移，处理数组该位置的迁移工作
+            synchronized (f) {
+                if (tabAt(tab, i) == f) {
+                    Node<K,V> ln, hn;
+                    // hash大于0，说明是链表的Node节点，依然采用1.7中高低两个链表进行迁移
+                    if (fh >= 0) {
+                        int runBit = fh & n;
+                        Node<K,V> lastRun = f;
+                        for (Node<K,V> p = f.next; p != null; p = p.next) {
+                            int b = p.hash & n;
+                            if (b != runBit) {
+                                runBit = b;
+                                lastRun = p;
+                            }
+                        }
+                        if (runBit == 0) {
+                            ln = lastRun;
+                            hn = null;
+                        }
+                        else {
+                            hn = lastRun;
+                            ln = null;
+                        }
+                        for (Node<K,V> p = f; p != lastRun; p = p.next) {
+                            int ph = p.hash; K pk = p.key; V pv = p.val;
+                            if ((ph & n) == 0)
+                                ln = new Node<K,V>(ph, pk, pv, ln);
+                            else
+                                hn = new Node<K,V>(ph, pk, pv, hn);
+                        }
+                        // 其中一个链表放在新数组的位置
+                        setTabAt(nextTab, i, ln);
+                        // 另一个放在新数组的位置
+                        setTabAt(nextTab, i + n, hn);
+                        // 将原数组该位置设置fwd, 代表这个位置已经处理完毕
+                        setTabAt(tab, i, fwd);
+                        advance = true;
+                    }
+                    else if (f instanceof TreeBin) {
+                        // 红黑树
+                        TreeBin<K,V> t = (TreeBin<K,V>)f;
+                        TreeNode<K,V> lo = null, loTail = null;
+                        TreeNode<K,V> hi = null, hiTail = null;
+                        int lc = 0, hc = 0;
+                        for (Node<K,V> e = t.first; e != null; e = e.next) {
+                            int h = e.hash;
+                            TreeNode<K,V> p = new TreeNode<K,V>
+                                (h, e.key, e.val, null, null);
+                            if ((h & n) == 0) {
+                                if ((p.prev = loTail) == null)
+                                    lo = p;
+                                else
+                                    loTail.next = p;
+                                loTail = p;
+                                ++lc;
+                            }
+                            else {
+                                if ((p.prev = hiTail) == null)
+                                    hi = p;
+                                else
+                                    hiTail.next = p;
+                                hiTail = p;
+                                ++hc;
+                            }
+                        }
+                        // 一分为二后，节点少于8，则转成链表
+                        ln = (lc <= UNTREEIFY_THRESHOLD) ? untreeify(lo) :
+                            (hc != 0) ? new TreeBin<K,V>(lo) : t;
+                        hn = (hc <= UNTREEIFY_THRESHOLD) ? untreeify(hi) :
+                            (lc != 0) ? new TreeBin<K,V>(hi) : t;
+
+                        // 将ln放置在相应的位置
+                        setTabAt(nextTab, i, ln);
+                        setTabAt(nextTab, i + n, hn);
+                        setTabAt(tab, i, fwd);
+                        advance = true;
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
 # 参看文章
 
 [1. 参考文章总结](https://www.cnblogs.com/gocode/p/analysis-source-code-of-ConcurrentHashMap.html)
 [2. 参考博客](https://www.pdai.tech/md/java/thread/java-thread-x-overview.html)
+3. 源码
