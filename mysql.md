@@ -176,10 +176,13 @@ ALTER TABLE `table_name` ADD [PRIMARY KEY/ UNIQUE/ INDEX index_name/ FULLTEXT] �
 7：MySQL 的隔离级别有哪些？
 
     未提交读
-    提交读（不会出现脏读，但是会产生"幻读"问题. 也会出现可重复读）：解决办法MVCC
+    提交读（不会出现脏读，但是会产生"幻读"问题. 也会出现可重复读）：脏读解决办法MVCC
     可重复读(可以不出现幻读，通过间隙锁+行锁):解决办法：Next-Key Lock是行锁与间隙锁的组合 + MVCC
     可串行化
 > 间隙锁：
+
+对一定范围内的数据进行加锁。解决幻读。（可重复度的机制下）幻读的原因是新增or更新操作。因此行锁不行，只能对一个范围加锁。
+
 
 8：MVCC 是什么？
 
@@ -348,7 +351,28 @@ order by有两种实现方法：1. 利用有序索引实现 2. 算出结果再�
 
 > 执行顺序：select -> from -> join -> on -> where -> group by -> having->order by（分好组后找到固定的分组）
 
+37. 数据库的联合索引
+```
+建立联合索引的语法
+    CREATE INDEX indexName ON tableName(column1,column2,...,columnN);
+    CREATE idx_un_userid_username ON user(id,name);
 
+好处：
+    1 避免回表
+    在执行计划中，table access by index rowid代表是回表动作。如在user的id列建有索引，select id from user这个不用回表，直接从索引中读取id的值，而select id,name from user中，不能返回除id列其他的值，所以必须要回表。
+    如果建有了id和name列的联合索引，则可以避免回表。另外，建立了id和name的联合索引(id列在在前)，则select id from user可以避免回表，而不用单独建立id列的单列索引。
+
+    2. 两个单列查询返回行较多，同时查返回行较少，联合索引更高效。
+
+注意事项：
+
+1. 【超过3个列的】联合索引不合适，否则虽然减少了回表动作，但【索引块过多】，查询时就要遍历更多的索引块了；
+
+2. 建索引的过程会【产生锁】，不是行级锁，而是【锁住整个表】，任何该表的DML操作都将被阻止，在生产环境中的【繁忙】时段建索引是一件非常危险的事情；
+
+3. 对于某段时间内，海量数据表有【频繁的更新】，这时可以先删除索引，插入数据，再重新建立索引来达到高效的目的。
+
+```
 ####  7.2.4. <a name='mysql'></a>37. 优化mysql语句的
 
 ##### 1. 注意书写时的某些顺序
