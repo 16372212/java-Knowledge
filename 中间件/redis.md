@@ -289,7 +289,7 @@ EXPIRE， PEXPIRE关键字设置过期
     主从架构，一主多从.
 
 redis 的主从复制原理能介绍一下么？
-redis 的sentinel原理能介绍一下么？
+redis 的sentinel原理能介绍一下么？(sentinel就是哨兵)
 Redis 集群模式的工作原理能说一下么？
 在集群模式下，Redis 的 key 是如何寻址的？
 分布式寻址都有哪些算法？说一下一致性 hash 算法？
@@ -321,4 +321,4 @@ redis内部有**文件事件处理器**，使用IO多路复用监听多个套接
 - 主从架构 + 哨兵实现高并发高可用
 - 高并发的同时，容纳大量的数据，那么就需要 redis 集群
 
-![redis高并发](../pic/redis高并.png)
+![redis高并发](../pic/redis高并发.png)

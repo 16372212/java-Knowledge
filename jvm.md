@@ -375,3 +375,23 @@ gc发生时，会设置一个标志。线程每到安全点的时候，回去轮
 ## 参考
 
 [1. 有道云笔记](https://note.youdao.com/ynoteshare/index.html?id=3fa30656141202169d7d99c632b261c5&type=notebook&_time=1631692521806#/A146B11BABEA47EDB396A2877BDEF000)
+
+## jvm的一些参数
+
+1. 堆内存参数
+-Xms, Xmx
+
+2. 新生代内存
+-XX：NewSize -XX:MaxNewSize
+
+3. 永久代代销
+
+4. 垃圾回收相关
+jvm有四种类型的GC：串型、并行、cms, g1。 分别不同的参数可以声明
+
+    -XX：+UseSerialGC
+    -XX: +UseParallelGC
+    -XX: +UseParNewGC
+    -XX: +UseG1GC
+
+记录gc记录的一些参数
