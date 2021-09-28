@@ -465,6 +465,12 @@ private final void transfer(Node<K,V>[] tab, Node<K,V>[] nextTab) {
 }
 ```
 
+size()方法
+
+JDK1.7 和 JDK1.8 对 size 的计算是不一样的。 1.7 中是先不加锁计算三次，如果三次结果不一样在加锁。
+JDK1.8 size 是通过对 baseCount 和 counterCell 进行 CAS 计算，最终通过 baseCount 和 遍历 CounterCell 数组得出 size
+
+
 # 参看文章
 
 [1. 参考文章总结](https://www.cnblogs.com/gocode/p/analysis-source-code-of-ConcurrentHashMap.html)
