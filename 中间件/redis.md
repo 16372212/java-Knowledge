@@ -104,6 +104,10 @@ redis主进程进行数据处理，专门folk出一个子进程进行持久化�
     1. 静态的商品和用户数据：数据类型是key(user id),value是一个hashMap, key是这个id对应的属性名字，value是相关的属性值。2. 一些结果，比如推荐列表，这个虽然是list类型的数据，但是还是用的String（list->jsonString), 难道之后再反序列化
 
 
+    
+    另外，redis用作消息队列从而进行（类似秒杀项目的预处理）
+
+
 
 ### 有设置超时时间吗？
 
@@ -322,11 +326,11 @@ Redis 的并发竞争问题是什么？如何解决这个问题？
     1 Redis内部【单线程】。并发处理事件：可通过IO多路复用，链接多个套接字
     2 内部通过【套接字】和客户端链接。
 
-redis内部有**文件事件处理器**，使用IO多路复用监听多个套接字。根据套接字目前的任务为套接字关联不同的事件处理器。
+redis内部有**文件事件处理器**，使用IO多路复用监听多个套接字socket。根据套接字的任务为套接字关联不同的事件处理器。
 
 ![事件](../pic/redis事件.png)
 
-
+IO多路复用程序把socket放到队列里，有序取出，送给【分派器】，然后分派器根据socket当前的事件送给事件【处理器】。
 ## 6 高并发
 
 - redis是单线程的。redis是基于内存的，cpu不是瓶颈，内存才是瓶颈，所以采用单线程就可以了
@@ -336,4 +340,82 @@ redis内部有**文件事件处理器**，使用IO多路复用监听多个套接
 - 主从架构 + 哨兵实现高并发高可用
 - 高并发的同时，容纳大量的数据，那么就需要 redis 集群
 
+
+
 ![redis高并发](../pic/redis高并发.png)
+
+
+
+## redis分布式锁
+Java的锁只能保证单机的时候有效
+
+
+
+## redis实现队列
+### 1 java实现
+使用jedis的publish发布
+
+```java
+jedis = redisConnection.getJedis();
+    for (String channel : channels) {
+        jedis.publish(channel, message);
+    }
+
+```
+
+消息的消费：
+```java
+if (channels != null && channels.length > 0) {
+    jedis = redisConnection.getJedis();
+    jedis.subscribe(new JedisPubSub() {
+        @Override
+        public void onMessage(String channel, String message) {
+            System.out.println("receive " + message + " from " + channel);
+            handleMessage(message); // 一些具体的操作
+        }
+    }, channels);
+}
+```
+
+### 2 底层实现逻辑
+
+1 List 实现消息队列
+
+LPUSH、RPOP 左进右出
+RPUSH、LPOP 右进左出
+
+但是会存在while(true)不停轮训队列直到数据存在，消耗性能。
+
+因此，Redis 还提供了 BLPOP、BRPOP 这种阻塞式读取的命令。【没有数据就阻塞】
+
+> list可以存在一个list专门用来备份，备份已经删除的数据。
+
+2 订阅与发布实现：publish/subscribe
+
+订阅者可以订阅一个或者多个频道(channel)，而发布者可以向指定的频道(channel)发送消息。
+
+> 缺点：消息无法【持久化】. 如果宕机，或者网络断开，消息就被丢弃了。
+
+3. Streams 实现消息队列
+
+仅追加内容的消息链表，把所有加入的消息都串起来. 每个消息有唯一id. 消息是持久化的。
+
+每个 Stream 都有唯一的名称，它就是 Redis 的 key
+
+
+
+## redis实现消息队列和kafka的区别
+
+1. 延迟
+redis 消息推送（基于分布式 pub/sub）多用于实时性较高，不可靠。
+其他的mq和kafka保证可靠但有一些延迟。
+
+2. 可靠
+redis-pub/sub断电就清空，而使用redis-list作为消息推送虽然有持久化，但是又太弱智，也并非完全可靠不会丢。
+
+
+3. 负载均衡
+redis无法实现分组。同一个组里只有一个订阅者会收到该消息，这样可以用作负载均衡。
+kafka分组，每组只有一台会收到，可以负载均衡，但是redis凡是订阅的都能收到。
+
+
