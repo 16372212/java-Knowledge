@@ -48,12 +48,22 @@ abstract类：（为了被子类重写）可以扩展（增加子类），但*�
 #### final:
 
 - 变量：不能被改写
-- 方法：方法不能在子类里重写
+- 方法：方法不能在子类里重写，但是可以在本类里重载
 - 类：无法被继承
+
 
 #### finally:
 
-无论是否发生异常，finally代码块中的代码总会被执行。try中如果有return，也会执行finally中的值。会先将try中要return的值存起来。当try和finally里都有return时，会忽略try的return，而使用finally的return。
+无论是否发生异常，finally代码块中的代码总会被执行。
+
+- return执行顺序：inally块中的return语句会覆盖try块中的return返回。
+
+try中如果有return，也会执行finally中的值。会先将try中要return的值存起来。当try和finally里都有return时，会忽略try的return，而使用finally的return。
+
+catch也是走之后继续执行finally.
+
+- 修改值执行顺序：如果try中赋值x=1. return x, 然后finally中赋值x = 3， 则返回的值是1，因为try中有return的值，就直接把值存起来（传值不是传的引用）。但是如果finally中也有return， 则return finally中的return
+
 
 
 #### finalize:
@@ -426,3 +436,25 @@ Class stdClass = Student.class;
 - 提高程序灵活性，减少耦合
 - 通过反射机制可以让程序创建和控制任何对象
 - 能够在运行时构造一个类的对象、判断类具有的成员变量和方法
+
+
+## jdk, jre
+
+jdk:（需要编写java程序安装的） 需要的开发工具包。jdk包括jre，javac
+
+jre: (需要运行java程序安装的)java运行时的环境。jvm, 核心类库，核心配置工具
+
+
+## 深拷贝浅拷贝
+基本数据类型的特点：直接存储在栈(stack)中的数据
+引用数据类型的特点：存储的是该对象在栈中引用，真实的数据存放在堆内存里
+
+引用数据类型在栈中存储了指针，该指针指向堆中该实体的起始地址。当解释器寻找引用值时，会首先检索其在栈中的地址，取得地址后从堆中获得实体。
+
+浅：只复制指向某个对象的指针，而不复制对象本身。新旧对象还是共享同一块内存
+深：另外创造一个一模一样的对象，新对象跟原对象不共享内存。修改新对象不会改到旧对象。
+
+## 反射
+
+【运行过程中】，知道类的所有属性和方法，调用类的所有属性和方法
+
