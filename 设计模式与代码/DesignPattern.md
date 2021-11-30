@@ -123,7 +123,7 @@ public class Singleton {
 /**
 * 4. 双检锁/双重校验锁（DCL，即 double-checked locking）
 * 采用双锁机制，安全且在多线程情况下能保持高性能。
-**/
+**/fdsfdsfs
 public class Singleton {  
     private volatile static Singleton singleton; // Instance对象 是 static volatile 类型的。
     private Singleton (){}  
