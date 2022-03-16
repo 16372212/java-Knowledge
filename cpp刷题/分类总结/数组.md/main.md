@@ -55,3 +55,9 @@ for(auto 拐点 ：all_points){
     for(key: hash){ ans += value*(value-1)}
 }
 ```
+
+# 二维数组中的问题：
+
+1. 动态规划
+2. bfs
+3. dfs
