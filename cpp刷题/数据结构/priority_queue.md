@@ -10,16 +10,43 @@ es# 实现方法
 priority_queue<>
 
 `priority_queue<Type, Container, Functional>`
-    
-Type 就是数据类型，Container 就是容器类型（Container必须是用数组实现的容器，比如vector,deque等等，但不能用 list。STL里面默认用的是vector），Functional 就是比较的方式，
-```
 
+
+Type 就是数据类型，Container 就是容器类型（Container必须是用数组实现的容器，比如vector,deque等等，但不能用 list。**STL里面默认用的是vector**），Functional 就是比较的方式，
+
+## 如果要用到小顶堆
+则一般要把模板的3个参数都带进去。STL里面定义了一个仿函数greater<>，基本类型可以用这个仿函数声明小顶堆。
+
+```c++
+1. priority_queue<int> q;
+2. priority_queue<int, vector<int>, greater<int> > q;
+3. priority_queue<pair<int,int>,vector<pair<int,int> >,greater<pair<int,int> > > coll;
+
+
+
+4. // 针对自定义, 默认用operator，所以这里只需要对operator进行一个改写就行了
+bool operator<(Node a, Node b){
+    if( a.x== b.x ) return a.y> b.y;
+    return a.x> b.x;
+}
+priority_queue<Node> q;
+
+// 同样也可以对operator>进行改写：
+> 这里补充operator+运算符的基础知识：
+
+
+5. // 或者这个
 struct cmp{
-    bool operator() (ListNode* l1, ListNode* l2){
-        return l1->val<l2->val;
+    bool operator() ( Node a, Node b ){//默认是less函数
+    //返回true时，a的优先级低于b的优先级（a排在b的后面）
+        if( a.x== b.x ) return a.y> b.y;      
+        return a.x> b.x; 
     }
 };
+priority_queue<Node, vector<Node>, cmp> q;
+
 ```
+
 # func
 
 ```
@@ -46,5 +73,4 @@ static bool cmp(int a , int b){
 }
 ```
 而有的时候会报错：
-
 写在类内时，cmp函数需要是静态函数，要加上static。
