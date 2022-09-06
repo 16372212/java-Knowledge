@@ -18,6 +18,25 @@
 ## 1.2 快慢指针
 判断是否存在环
 
+## 1.3 三数之和
+使用一个值遍历，然后后面是双指针
+
+i + 左右指针
+
+> 四数之和： i+j+左右指针。
+
+> 技巧: 需要剪枝:
+
+```cpp
+if ((long) nums[i] + nums[j] + nums[j + 1] + nums[j + 2] > target) {
+    break;
+}
+if ((long) nums[i] + nums[j] + nums[length - 2] + nums[length - 1] < target) {
+    continue;
+}
+
+```
+
 # 2 前缀和
 - 问题特质：连续片段，求和，片段内大小不一致
 
