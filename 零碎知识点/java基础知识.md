@@ -483,3 +483,69 @@ jre: (需要运行java程序安装的)java运行时的环境。jvm, 核心类库
 
 【运行过程中】，知道类的所有属性和方法，调用类的所有属性和方法
 
+
+## 回调
+
+> 回调的核心就是回调方将本身即this传递给调用方
+
+思想：
+
+类A的a()方法调用类B的b()方法
+类B的b()方法执行完毕主动调用类A的callback()方法
+```java
+public interface Callback { 
+    public void tellAnswer(int answer);
+}
+
+/**
+ * 老师对象，原文出处http://www.cnblogs.com/xrq730/p/6424471.html
+ */
+public class Teacher implements Callback {
+
+    private Student student;
+
+    public Teacher(Student student) {
+        this.student = student;
+    }
+
+    public void askQuestion() {
+        student.resolveQuestion(this);
+    }
+
+    @Override
+    public void tellAnswer(int answer) {
+        System.out.println("知道了，你的答案是" + answer);
+    }
+}
+```
+
+希望学生执行完方法后可以回调老师的tellAnswer，让老师提问学生得到答案后公布给大家。
+
+```java
+public interface Student {
+    public void resolveQuestion(Callback callback);
+}
+
+/**
+ * 一个名叫Ricky的同学解决老师提出的问题，原文出处http://www.cnblogs.com/xrq730/p/6424471.html
+ */
+public class Ricky implements Student {
+
+    @Override
+    public void resolveQuestion(Callback callback) {
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+
+        }
+
+        // 回调，告诉老师作业写了多久
+        callback.tellAnswer(3);
+    }
+
+```
+
+优点：扩展性非常好；数据分离，每段数据都放在回调中进行。而且可以异步回调，谁执行完直接返回就行。
+
+非回调的例子：
+1）使用Future+Callable的方式，等待异步线程执行结果，这相当于就是同步调用的一种变种，因为其本质还是方法返回一个结果，即学生的回答
