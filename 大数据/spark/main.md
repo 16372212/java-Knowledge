@@ -28,10 +28,14 @@ driver首先会向集群管理者（standalone、yarn，mesos）申请spark应�
 driver调度和执行应用代码。具体功能：
 1. 用户程序转为job
 2. 将Spark应用代码拆分成多个stage
-3. 为每个stage创建一批tasks。
+3. 为每个stage创建一批tasks。(stage内，最终RDD有多少个partition就有多少个task)
 4. 将tasks分配给各个executor中执行。负责执行executor之间的task调度。
 5. 跟踪executor执行情况。
 6. 通过UI洁面展示查询运行情况。
+
+
+> difference between job and task:
+
 
 
 #### executor：Worker节点的一个JVM进程。
@@ -94,8 +98,14 @@ Master |        |
 
 ### c. Yarn
 
-Standalone模式是由**Spark自身提供计算资源**，独立性强，但是Spark的资源调度能力是有限的。
-如果要使用其他资源比如说Had
+Standalone模式是由**Spark自身提供计算资源**，独立性强，固定的资源分配策略。每个任务固定数量的core，各个Job按顺序依次分配。适合单用户情况。
+
+Yarn支持动态资源配置。因为Spark本身的资源调度能力是有限的，可以通过Yarn使用其他调动系统
+运行在Yarn的框架都共享一个集中配置好的资源池，可以利用Yarn资源调度来分类，隔离以及负载均衡。
+使用Yarn，Spark可以运行在k8s hadoop之上。 
+
+
+
 
 ![alt 属性文本](./pics/mesos.jpeg)
 
@@ -152,11 +162,39 @@ TimeStamp By
 
 ## 5. 内存管理
 
+### 内存分布: OnHeap + OffHeap
+
+1） OnHeap:
+基于JVM堆内空间的分配，在此基础上做了更详细的分配，来充分利用内存。`参数：--executor-memory` 
+Executor内运行的并发任务共享JVM堆内外存。
+
+2）OffHeap:
+JVM还有OffHeap内存，（worker节点的系统内存中开辟空间，从而优化内存）
+
+为了提高Shuffle排序的效率，存储优化过的二进制数据。
+
+默认只使用来堆内内存。
+### 内存区域划分
+
+1. Execution内存
+
+2. Storage内存
 
 
+## 6. 重要参数
 
+提交任务时候的参数：
+
+executor-cores：每个executor的内核数: 4
+num-executors: 默认为2
+executor-memory: 16G
+driver-cores driver使用内核数，默认是1
+driver-memory: dirver内存大小，默认512M
 
 Spark运行加购：
+
+
+## 7. Spark架构和作业提交流程
 
 
 # 和flink的区别
