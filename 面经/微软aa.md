@@ -62,10 +62,22 @@ Spark相关基本技术
 
 ## Databrick
 
+自动化集群管理。
 
 1. 硬件配置：定义的时候用的什么单位：,databrick的memory配置等等
+
+Cluster Mode：集群的模式共有三种，High concurrency（高并发）、Standard（标准）和Single Node（单节点）。标准模式是推荐模式，通常用于单用户的集群
+
+Runtime
+
 2. 怎么实现的HA高可用，在only one driver and one worker,
 3. 用的什么配置：Spark支持三种环境。databrick帮它实现的哪一种？
+
+Spark分布式架构与单机多核架构的异同，Databrick用的是哪一个，我选择的是哪一个？
+
+应用场景：
+
+在分布式运算下，数据尽量本地运算，减少网络I/O开销。由于大规模分布式系统要在不同处理单元之间传送信息，在网络传输少时，系统可以充分发挥资源的优势，达到高效率。
 
 ### 做什么的
 Databrick可以作为

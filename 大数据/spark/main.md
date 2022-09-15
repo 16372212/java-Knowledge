@@ -2,6 +2,16 @@
 
 基于内存的大数据分析计算引擎。
 
+内存：
+## 0. 框架
+
+（3）Spark SQL
+Spark SQL提供在大数据上的SQL查询功能。有一些**查询解析和优化**
+
+（4）Spark Streaming
+Spark Streaming通过将流数据按指定时间片累积为RDD，然后将每个RDD进行批处理，进而实现大规模的流数据处理。
+
+
 ## 1. executor、driver; master、workder的区别
 
 #### master & worker
@@ -196,5 +206,23 @@ Spark运行加购：
 
 ## 7. Spark架构和作业提交流程
 
+## 8. Spark高容错性和高可伸缩性
 
-# 和flink的区别
+# 产品对比
+
+## 1）和flink的区别
+
+## 2）Spark相比Hadoop MapReduce的优势
+
+（1） 中间结果的处理
+
+Hadoop在MapReduce时候，中间产生多个stage，每个stage有一些中间数据，需要使用HDFS来存储Stage的输出结果。**但是Spark将执行模型抽象为通用的有向无环图执行计划（DAG）** （抽象成这样又怎样
+
+（2）数据格式和内存布局
+Spark抽象出分布式内存存储结构弹性分布式数据集RDD,进行数据的存储。
+
+（3）执行策略
+Spark任务在shuffle中不是所有情景都需要排序,所以支持基于Hash的分布式聚合,调度中采用更为通用的任务执行计划图(DAG),每一轮次的输出结果在内存缓存
+
+
+## 3）
