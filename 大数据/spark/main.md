@@ -171,6 +171,46 @@ TimeStamp By
 
 ## 4. Shuffle
 
+Shuffle是连接map和reduce之间的桥梁，它将map的输出对应到reduce输入中，这期间涉及到序列化反序列化、跨节点网络IO以及磁盘读写IO等，所以说Shuffle是整个应用程序运行过程中非常昂贵的一个阶段
+
+
+![alt 属性文本](./pics/_shuffle.jpg)
+
+
+在map阶段，除了map的业务逻辑外，还有shuffle write的过程，这个过程涉及到序列化、磁盘IO等耗时操作；在reduce阶段，除了reduce的业务逻辑外，还有前面shuffle read过程，这个过程涉及到网络IO、反序列化等耗时操作。
+
+1. hash shuffle v1.1
+
+在map阶段(shuffle write)，每个map都会为下游stage的每个partition写一个临时文件，假如下游stage有1000个partition，那么每个map都会生成1000个临时文件
+
+在reduce阶段(shuffle read)，每个reduce task都会拉取所有map对应的那部分partition数据，那么executor会打开所有临时文件准备网络传输，另外，如果reduce阶段有combiner操作，那么它会把网络中拉到的数据保存在一个HashMap中进行合并操作，如果数据量较大，很容易引发OOM操作。
+
+后续改进：将所有的map task相同的分区文件合并
+
+
+2. add sort shuffle v1.1.x
+
+在map阶段(shuffle write)，会按照partition id以及key对记录进行排序，将所有partition的数据写在同一个文件中，该文件中的记录首先是按照partition id排序一个一个分区的顺序排列，每个partition内部是按照key进行排序存放，map task运行期间会顺序写每个partition的数据，并通过一个索引文件记录每个partition的大小和偏移量
+
+在reduce阶段(shuffle read)，reduce task拉取数据做combine时不再是采用HashMap，而是采用ExternalAppendOnlyMap，该数据结构在做combine时，如果内存不足，会刷写磁盘，很大程度的保证了程序的健壮性，避免大规模数据情况下的OOM。
+
+
+2. Unsafe shuffle
+
+将数据记录用二进制的方式存储，直接在序列化的二进制数据上sort而不是在java 对象。
+
+- 一方面可以减少memory的使用和GC的开销，另一方面避免shuffle过程中频繁的序列化以及反序列化
+- GC memory
+
+
+缺点：reduceByKey这类有aggregate操作的算子是不能使用Unsafe Shuffle
+
+
+3. Sort Shuffle v2
+
+
+从spark-1.6.0开始，把Sort Shuffle和Unsafe Shuffle全部统一到Sort Shuffle中，如果检测到满足Unsafe Shuffle条件会自动采用Unsafe Shuffle，否则采用Sort Shuffle。从spark-2.0.0开始，spark把Hash Shuffle移除，可以说目前spark-2.0中只有一种Shuffle，即为Sort Shuffle。
+
 ![alt 属性文本](./pics/shuffle0.jpeg)
 
 上游一个分区中的数据被下游多个分区的数据所共享：宽依赖-> 发生shuffle
@@ -180,28 +220,10 @@ TimeStamp By
 因此这里partition中的数据需要等待->放到磁盘中进行等待。
 
 > Shuffle一定会要落盘：因此速度很慢。
+> 序列化反序列化
+> 跨界点网络IO
 
 ![alt 属性文本](./pics/shuffle.png)
-
-### Shuffle **提高速度的方法**：
-
-1. 使落盘的数据量变少-> reduce by key, group by key. 算子如果存在**预聚合功能**，就能提高性能
-
-2. 一些改进：
-
-小文件变多，性能下降（早期hashShuffle）
-![alt 改进2](./pics/shuffle2.png)
-
-这样在core比较多的时候，操作文件数量依然很多 (优化后的hashShuffle)
-![alt 改进3](./pics/shuffle3.png)
-
-把文件分段，一个task读取一个file的其中一段。另外还需要加上一个索引index文件。（SortShuffle）
-
-先通过sort让文件依次按照一定的顺序分段放在整个大文件中，这样index时候有规律就快。
-但是sort很慢，所以可以将sort改成hash，不需要排序也能快速定位。
-![alt 改进3](./pics/shuffle4.jpeg)
-
-**现在的shuffle的过程**
 
 
 
