@@ -123,8 +123,6 @@ stringBuilder没有对调用方法增加同步锁，所以非线程安全。
 方法：
 getClass, hashcode, equals, toString, wait, notify, notifyAll(此对象监视器上等待的所有线程) finalize, 
 
-## 反射
-
 
 ## 集合(容器)
 
@@ -422,32 +420,40 @@ Object都有哪些方法
 
 ## java反射
 
+### 1）反射定义
+反射是为了解决在运行期，对某个实例一无所知的情况下，如何调用其方法。
+
 程序在**运行期间**拿到类的成员变量和方法，调用任意一个对象的属性和方法。（不需要静态创建类，实例化后硬编码来操作了。）
 
 JVM为每个加载的类创建对应的实例，并在实例中保存类的所有信息，比如类名，包名，父类，实现的接口等。获得了某个实例，就可以通过实例拿到对应的class的所有信息。
 
 将.class文件读入内存时，自动为之创建一个java.lang.Class对象。通过这个Class对象，获得对象的其他信息。
 
-### 得到Class对象的方法
-
-1. 用对象调用getClass（）方法
-```java
-// 获得类的方法
-String s = "hello";
-Class cls = s.getClass();
-```
-2. 通过 Class类的静态方法
-```java
-// 知道完整类名
-Class cls = Class.forName("java.long.String")
-```
-动态加载类，jvm在用到.class文件时才会把这个类加载。
-
-3. 直接使用类的class属性，类名.class
+### 2）反射举例：
 
 ```java
-Class stdClass = Student.class;
+// 比如说getFullName这个方法得到一个Person的实例person1, 但是传参的类型不是Person而是Object。
+// 所以在这个方法里我们对这个实例一无所知，不知道这个obj是person类的，更不知道应该调用它的哪个方法。
+String getFullName(Object obj) {
+    return ???
+}
 ```
+
+所以这个时候可以通过Class cls = obj.getClass();得到class实例就可以了解需要的信息。
+```java
+void printObjectInfo(Object obj) {
+    Class cls = obj.getClass();
+}
+```
+
+### 3）操作方法，通过反射读写
+
+通过Class实例的方法可以获取Field实例：getField()，getFields()，getDeclaredField()，getDeclaredFields()；
+
+通过Field实例可以读取或设置某个对象的字段getName()，getType()，getModifiers()；
+
+如果Field获取字段时存在访问限制，要首先调用setAccessible(true)来访问非public字段。
+
 
 ### 得到Class后，可以使用Class类中的一些方法获得属性
 
